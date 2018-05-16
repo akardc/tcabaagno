@@ -1,6 +1,7 @@
 import { NgModule } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RestService } from './rest.service';
+import { PlayerConnectionService } from './player-connection.service';
 
 @NgModule({
   imports: [
@@ -8,7 +9,8 @@ import { RestService } from './rest.service';
   ],
   declarations: [],
   providers: [
-    RestService
+    RestService,
+    PlayerConnectionService
   ]
 })
 export class ServicesModule { }

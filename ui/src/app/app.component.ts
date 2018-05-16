@@ -1,8 +1,8 @@
 import { Component, OnInit } from '@angular/core';
-import {WebSocketSubject} from 'rxjs/webSocket';
 import { RestService } from './services/rest.service';
 import { Game } from './models/game';
 import { GamesListDataSource } from './utils/games-list-data-source';
+import { PlayerConnectionService } from './services/player-connection.service';
 
 @Component({
   selector: 'app-root',
@@ -10,27 +10,14 @@ import { GamesListDataSource } from './utils/games-list-data-source';
   styleUrls: ['./app.component.css']
 })
 export class AppComponent implements OnInit {
-  title = 'app';
-  ws: WebSocketSubject<any>;
-
-  games: Game[] = [];
   dataSource: GamesListDataSource;
-  displayedColumns = ['name'];
+  displayedColumns = ['name', 'join'];
 
-  constructor(private restService: RestService) {}
+  constructor(private restService: RestService,
+              private playerConnection: PlayerConnectionService) {}
 
   ngOnInit() {
-    // this.ws = new WebSocketSubject('ws://localhost:8080/games/Forgerdiamond/join');
-    // console.log('connecting to ws', this.ws);
-    // this.ws.subscribe(
-    //   (msg) => console.log('incoming msg', msg),
-    //   (err) => console.log('incoming err', err)
-    // );
     this.dataSource = new GamesListDataSource(this.restService);
-  }
-
-  public send() {
-    this.ws.next('hello server');
   }
 
   public startNewGame() {
@@ -38,5 +25,13 @@ export class AppComponent implements OnInit {
       console.log(game);
       this.dataSource.refresh();
     });
+  }
+
+  public joinGame(gameName: string) {
+    this.playerConnection.joinGame(gameName);
+  }
+
+  public sendMessage() {
+    this.playerConnection.sendMessage('hello!');
   }
 }
