@@ -18,4 +18,11 @@ export class RestService {
       return res.payload;
     }));
   }
+
+  public getActiveGames(): Observable<Game[]> {
+    const url = 'http://localhost:8080/games';
+    return this.httpClient.get(url).pipe(map((res: Response<Game[]>) => {
+      return res.payload;
+    }));
+  }
 }

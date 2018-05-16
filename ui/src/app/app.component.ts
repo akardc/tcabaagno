@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import {WebSocketSubject} from 'rxjs/webSocket';
 import { RestService } from './services/rest.service';
 import { Game } from './models/game';
+import { GamesListDataSource } from './utils/games-list-data-source';
 
 @Component({
   selector: 'app-root',
@@ -12,6 +13,10 @@ export class AppComponent implements OnInit {
   title = 'app';
   ws: WebSocketSubject<any>;
 
+  games: Game[] = [];
+  dataSource: GamesListDataSource;
+  displayedColumns = ['name'];
+
   constructor(private restService: RestService) {}
 
   ngOnInit() {
@@ -21,6 +26,7 @@ export class AppComponent implements OnInit {
     //   (msg) => console.log('incoming msg', msg),
     //   (err) => console.log('incoming err', err)
     // );
+    this.dataSource = new GamesListDataSource(this.restService);
   }
 
   public send() {
@@ -30,6 +36,7 @@ export class AppComponent implements OnInit {
   public startNewGame() {
     this.restService.createNewGame().subscribe((game: Game) => {
       console.log(game);
+      this.dataSource.refresh();
     });
   }
 }

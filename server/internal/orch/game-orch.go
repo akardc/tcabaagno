@@ -11,23 +11,33 @@ import (
 
 func NewGameOrch() *GameOrch {
 	return &GameOrch{
-		games: map[string]*websockets.Hub{},
+		games: map[string]*GameController{},
 	}
 }
 
 type GameOrch struct {
-	hub   *websockets.Hub
-	games map[string]*websockets.Hub
+	games map[string]*GameController
 }
 
-func (o *GameOrch) CreateNewGame() (NewGameOutput, error) {
-	gameName := randomdata.Adjective() + "-" + randomdata.Noun()
-	o.games[gameName] = websockets.NewHub()
-	go o.games[gameName].Run()
-	log.Printf("Started new game with name %s", gameName)
-	return NewGameOutput{
-		Name: gameName,
+func (o *GameOrch) CreateNewGame() (*GameOutput, error) {
+	game := NewGameController()
+	o.games[game.Name] = game
+	log.Printf("Started new game with name %s", game.Name)
+	return &GameOutput{
+		Name: game.Name,
 	}, nil
+}
+
+func (o *GameOrch) GetActiveGames() ([]*GameOutput, error) {
+	var output []*GameOutput
+
+	for _, game := range o.games {
+		output = append(output, &GameOutput{
+			Name: game.Name,
+		})
+	}
+
+	return output, nil
 }
 
 func (o *GameOrch) Join(gameName string, w http.ResponseWriter, r *http.Request) error {
@@ -35,14 +45,25 @@ func (o *GameOrch) Join(gameName string, w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return fmt.Errorf("The game %s was not found", gameName)
 	}
-	websockets.ServeWS(game, w, r)
+	websockets.ServeWS(game.Hub, w, r)
 	return nil
 }
 
-func (o *GameOrch) ListActiveGames() {
-
+type GameController struct {
+	Name string
+	Hub  *websockets.Hub
 }
 
-type NewGameOutput struct {
+func NewGameController() *GameController {
+	name := randomdata.Adjective() + "-" + randomdata.Noun()
+	hub := websockets.NewHub()
+	go hub.Run()
+	return &GameController{
+		Name: name,
+		Hub:  hub,
+	}
+}
+
+type GameOutput struct {
 	Name string
 }

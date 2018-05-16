@@ -34,6 +34,10 @@ func (gr *GameRoutes) Router() (string, chi.Router) {
 		return gr.gameOrch.CreateNewGame()
 	}))
 
+	router.Get("/", RequestHandler(func() (interface{}, error) {
+		return gr.gameOrch.GetActiveGames()
+	}))
+
 	router.Get("/{gameName}/join", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		gameName := chi.URLParam(r, "gameName")
 		gr.gameOrch.Join(gameName, w, r)
