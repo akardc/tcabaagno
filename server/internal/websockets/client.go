@@ -42,7 +42,9 @@ var upgrader = websocket.Upgrader{
 
 // Client is a middleman between the websocket connection and the hub.
 type Client struct {
-	hub *Hub
+	ID string
+
+	hub *GameController
 
 	// The websocket connection.
 	conn *websocket.Conn
@@ -124,7 +126,7 @@ func (c *Client) writePump() {
 }
 
 // ServeWS handles websocket requests from the peer.
-func ServeWS(hub *Hub, w http.ResponseWriter, r *http.Request) {
+func ServeWS(hub *GameController, w http.ResponseWriter, r *http.Request) {
 	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)

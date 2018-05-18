@@ -5,26 +5,26 @@ import (
 	"log"
 	"net/http"
 
-	"github.com/Pallinder/go-randomdata"
 	"github.com/akardc/tcabaagno/server/internal/websockets"
 )
 
 func NewGameOrch() *GameOrch {
 	return &GameOrch{
-		games: map[string]*GameController{},
+		games: map[string]*websockets.GameController{},
 	}
 }
 
 type GameOrch struct {
-	games map[string]*GameController
+	games map[string]*websockets.GameController
 }
 
 func (o *GameOrch) CreateNewGame() (*GameOutput, error) {
-	game := NewGameController()
-	o.games[game.Name] = game
-	log.Printf("Started new game with name %s", game.Name)
+	game := websockets.NewGameController()
+	o.games[game.ID] = game
+	go game.Run()
+	log.Printf("Started new game with name %s", game.ID)
 	return &GameOutput{
-		Name: game.Name,
+		Name: game.ID,
 	}, nil
 }
 
@@ -33,7 +33,7 @@ func (o *GameOrch) GetActiveGames() ([]*GameOutput, error) {
 
 	for _, game := range o.games {
 		output = append(output, &GameOutput{
-			Name: game.Name,
+			Name: game.ID,
 		})
 	}
 
@@ -45,23 +45,13 @@ func (o *GameOrch) Join(gameName string, w http.ResponseWriter, r *http.Request)
 	if !ok {
 		return fmt.Errorf("The game %s was not found", gameName)
 	}
-	websockets.ServeWS(game.Hub, w, r)
+	websockets.ServeWS(game, w, r)
 	return nil
 }
 
 type GameController struct {
-	Name string
-	Hub  *websockets.Hub
-}
-
-func NewGameController() *GameController {
-	name := randomdata.Adjective() + "-" + randomdata.Noun()
-	hub := websockets.NewHub()
-	go hub.Run()
-	return &GameController{
-		Name: name,
-		Hub:  hub,
-	}
+	Name           string
+	GameController *websockets.GameController
 }
 
 type GameOutput struct {
