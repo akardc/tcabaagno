@@ -3,16 +3,16 @@ package websockets
 import (
 	"encoding/json"
 	"log"
-	"strings"
 
 	"github.com/Pallinder/go-randomdata"
 	"github.com/satori/go.uuid"
 )
 
 const (
-	StartGameMessage       string = "start-game"
-	PlayerJoinedMessage    string = "player-joined"
-	SubmitQuestionsMessage string = "submit-questions"
+	StartGameMessage            string = "start-game"
+	RegistrationResponseMessage string = "joined-game"
+	GameUpdatedMessage          string = "game-updated"
+	SubmitQuestionsMessage      string = "submit-questions"
 )
 
 type SubmitQuestionsMessagePayload struct {
@@ -23,8 +23,14 @@ type SubmitQuestionsMessagePayload struct {
 	Why   string `json:"why"`
 }
 
-type PlayerJoinedMessagePayload struct {
-	ID string `json:"id"`
+type RegistrationResponseMessagePayload struct {
+	ID     string `json:"id"`
+	GameID string `json:"gameId"`
+}
+
+type GameUpdatedMessagePayload struct {
+	ID         string `json:"id"`
+	NumPlayers int    `json:"numPlayers"`
 }
 
 type Message struct {
@@ -71,6 +77,7 @@ func (g *GameController) Run() {
 			if _, ok := g.clients[client.ID]; ok {
 				delete(g.clients, client.ID)
 				close(client.send)
+				g.gameUpdated()
 			}
 		case message := <-g.broadcast:
 			g.handleReceivedMessage(message)
@@ -87,22 +94,44 @@ func (g *GameController) registerClient(client *Client) {
 	g.clients[client.ID] = client
 
 	g.sendMessageToSingleClient(client, Message{
-		Type: PlayerJoinedMessage,
-		Payload: PlayerJoinedMessagePayload{
-			ID: client.ID,
+		Type: RegistrationResponseMessage,
+		Payload: RegistrationResponseMessagePayload{
+			ID:     client.ID,
+			GameID: g.ID,
+		},
+	})
+	g.gameUpdated()
+}
+
+func (g *GameController) gameUpdated() {
+	g.sendMessageToAllClients(Message{
+		Type: GameUpdatedMessage,
+		Payload: GameUpdatedMessagePayload{
+			ID:         g.ID,
+			NumPlayers: len(g.clients),
 		},
 	})
 }
 
-func (g *GameController) handleReceivedMessage(message []byte) {
-	msg := strings.Trim(string(message), "\"")
-	log.Printf("Routing Incoming Message: %s", msg)
-	switch msg {
-	case StartGameMessage:
-		g.sendMessageToAllClients(msg)
-	default:
-		log.Printf("No handler for message \"%s\", discarding", msg)
+func (g *GameController) handleReceivedMessage(messageData []byte) {
+	var message Message
+	if err := json.Unmarshal(messageData, &message); err != nil {
+		log.Printf("Error decoding message: %s", messageData)
+		return
 	}
+	log.Printf("Routing Incoming Message: %s", message.Type)
+	switch message.Type {
+	case StartGameMessage:
+		g.startGame()
+	default:
+		log.Printf("No handler for message \"%s\", discarding", message)
+	}
+}
+
+func (g *GameController) startGame() {
+	g.sendMessageToAllClients(Message{
+		Type: StartGameMessage,
+	})
 }
 
 func (g *GameController) sendMessageToSingleClient(client *Client, message Message) {
@@ -114,12 +143,7 @@ func (g *GameController) sendMessageToSingleClient(client *Client, message Messa
 	client.send <- []byte(messageJSON)
 }
 
-func (g *GameController) sendMessageToAllClients(messageType string) {
-	log.Printf("Sending message to all clients: %s", string(messageType))
-	var message Message
-	message = Message{
-		Type: messageType,
-	}
+func (g *GameController) sendMessageToAllClients(message Message) {
 	messageJSON, err := json.Marshal(message)
 	if err != nil {
 		return
