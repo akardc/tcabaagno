@@ -1,5 +1,14 @@
 <mat-toolbar color="primary">
     <span>Three Chinese Altar Boys</span>
+    <span class="spacer"></span>
+    <mat-menu #menu="matMenu">
+        <button mat-menu-item (click)="goToAdminPage()">Game Admin Page</button>
+        <button mat-menu-item (click)="goToGameList()">Games List</button>
+        <button mat-menu-item>Current Game</button>
+    </mat-menu>
+    <button mat-icon-button [matMenuTriggerFor]="menu">
+        <mat-icon>menu</mat-icon>
+    </button>
 </mat-toolbar>
 
 <router-outlet></router-outlet>

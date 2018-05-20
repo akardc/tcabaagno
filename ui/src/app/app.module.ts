@@ -1,6 +1,7 @@
 import { BrowserModule } from '@angular/platform-browser';
+import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { NgModule } from '@angular/core';
-import { MatButtonModule, MatToolbarModule, MatTableModule } from '@angular/material';
+import { MatButtonModule, MatToolbarModule, MatTableModule, MatMenuModule, MatIconModule } from '@angular/material';
 import { RouterModule, Routes } from '@angular/router';
 
 import { AppComponent } from './app.component';
@@ -10,9 +11,9 @@ import { GamesListComponent } from './components/games-list/games-list.component
 import { GameAdminComponent } from './components/game-admin/game-admin.component';
 
 const appRoutes: Routes = [
-  {path: '', redirectTo: '/games', pathMatch: 'full'},
-  {path: 'games', component: GamesListComponent},
-  {path: 'games/:gameId/admin', component: GameAdminComponent}
+  { path: '', redirectTo: '/games', pathMatch: 'full' },
+  { path: 'games', component: GamesListComponent },
+  { path: 'games/:gameId/admin', component: GameAdminComponent }
 ];
 
 @NgModule({
@@ -28,7 +29,10 @@ const appRoutes: Routes = [
     BrowserModule,
     MatButtonModule,
     MatToolbarModule,
-    MatTableModule
+    MatTableModule,
+    MatMenuModule,
+    MatIconModule,
+    BrowserAnimationsModule
   ],
   providers: [
   ],
