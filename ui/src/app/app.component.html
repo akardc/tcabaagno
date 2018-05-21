@@ -4,7 +4,7 @@
     <mat-menu #menu="matMenu">
         <button mat-menu-item (click)="goToAdminPage()">Game Admin Page</button>
         <button mat-menu-item (click)="goToGameList()">Games List</button>
-        <button mat-menu-item>Current Game</button>
+        <button mat-menu-item (click)="goToCurrentStep()">Current Step</button>
     </mat-menu>
     <button mat-icon-button [matMenuTriggerFor]="menu">
         <mat-icon>menu</mat-icon>

@@ -44,6 +44,10 @@ export class PlayerConnectionService {
     this.connection.next(message);
   }
 
+  public openCurrentStep() {
+    this.router.navigate([`/games/${this.gameInfo.id}/questions`]);
+  }
+
   private handleIncomingMessage(message: Message<any>) {
     switch (message.type) {
       case 'player-joined':
@@ -54,6 +58,9 @@ export class PlayerConnectionService {
         break;
       case 'game-updated':
         this.gameUpdated(message);
+        break;
+      case 'start-game':
+        this.openCurrentStep();
         break;
     }
   }

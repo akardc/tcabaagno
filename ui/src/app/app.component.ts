@@ -24,4 +24,8 @@ export class AppComponent {
   public goToGameList() {
     this.router.navigate(['/games']);
   }
+
+  public goToCurrentStep() {
+    this.playerConnection.openCurrentStep():
+  }
 }
