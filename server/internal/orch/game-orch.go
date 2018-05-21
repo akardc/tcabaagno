@@ -34,6 +34,7 @@ func (o *GameOrch) GetActiveGames() ([]*GameOutput, error) {
 	for _, game := range o.games {
 		output = append(output, &GameOutput{
 			ID: game.ID,
+			Status: game.CurrentGameStep,
 		})
 	}
 
@@ -45,15 +46,18 @@ func (o *GameOrch) Join(gameID string, w http.ResponseWriter, r *http.Request) e
 	if !ok {
 		return fmt.Errorf("The game %s was not found", gameID)
 	}
-	websockets.ServeWS(game, w, r)
+	if err := game.Join(w, r); err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+	}
 	return nil
 }
 
 type GameController struct {
-	ID           string
+	ID             string
 	GameController *websockets.GameController
 }
 
 type GameOutput struct {
-	ID string `json:"id"`
+	ID     string `json:"id"`
+	Status string `json:"status"`
 }

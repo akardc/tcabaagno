@@ -3,8 +3,10 @@ package websockets
 import (
 	"encoding/json"
 	"log"
+	"net/http"
 
 	"github.com/Pallinder/go-randomdata"
+	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
 
@@ -13,6 +15,11 @@ const (
 	RegistrationResponseMessage string = "joined-game"
 	GameUpdatedMessage          string = "game-updated"
 	SubmitQuestionsMessage      string = "submit-questions"
+
+	AcceptingPlayersGameStep   string = "accepting-players"
+	AcceptingQuestionsGameStep string = "accepting-questions"
+	AcceptingAnswersGameStep   string = "accepting-answers"
+	ReadingSubmissionsGameStep string = "reading-submissions"
 )
 
 type SubmitQuestionsMessagePayload struct {
@@ -29,8 +36,9 @@ type RegistrationResponseMessagePayload struct {
 }
 
 type GameUpdatedMessagePayload struct {
-	ID         string `json:"id"`
-	NumPlayers int    `json:"numPlayers"`
+	ID          string `json:"id"`
+	NumPlayers  int    `json:"numPlayers"`
+	CurrentStep string `json:"currentStep"`
 }
 
 type Message struct {
@@ -41,7 +49,8 @@ type Message struct {
 // GameController maintains the set of active clients and broadcasts messages to the
 // clients.
 type GameController struct {
-	ID string
+	ID              string
+	CurrentGameStep string
 
 	// Registered clients.
 	// clients map[*Client]bool
@@ -60,11 +69,12 @@ type GameController struct {
 func NewGameController() *GameController {
 	name := randomdata.Adjective() + "-" + randomdata.Noun()
 	return &GameController{
-		ID:         name,
-		broadcast:  make(chan []byte),
-		register:   make(chan *Client),
-		unregister: make(chan *Client),
-		clients:    make(map[string]*Client),
+		ID:              name,
+		CurrentGameStep: AcceptingPlayersGameStep,
+		broadcast:       make(chan []byte),
+		register:        make(chan *Client),
+		unregister:      make(chan *Client),
+		clients:         make(map[string]*Client),
 	}
 }
 
@@ -83,6 +93,15 @@ func (g *GameController) Run() {
 			g.handleReceivedMessage(message)
 		}
 	}
+}
+
+func (g *GameController) Join(w http.ResponseWriter, r *http.Request) error {
+	if g.CurrentGameStep == AcceptingPlayersGameStep {
+		ServeWS(g, w, r)
+	} else {
+		return errors.Errorf("Could not join game. It has already started")
+	}
+	return nil
 }
 
 func (g *GameController) registerClient(client *Client) {
@@ -107,8 +126,9 @@ func (g *GameController) gameUpdated() {
 	g.sendMessageToAllClients(Message{
 		Type: GameUpdatedMessage,
 		Payload: GameUpdatedMessagePayload{
-			ID:         g.ID,
-			NumPlayers: len(g.clients),
+			ID:          g.ID,
+			NumPlayers:  len(g.clients),
+			CurrentStep: g.CurrentGameStep,
 		},
 	})
 }
@@ -129,9 +149,13 @@ func (g *GameController) handleReceivedMessage(messageData []byte) {
 }
 
 func (g *GameController) startGame() {
-	g.sendMessageToAllClients(Message{
-		Type: StartGameMessage,
-	})
+	if g.CurrentGameStep == AcceptingPlayersGameStep {
+		g.CurrentGameStep = AcceptingQuestionsGameStep
+		g.sendMessageToAllClients(Message{
+			Type: StartGameMessage,
+		})
+		g.gameUpdated()
+	}
 }
 
 func (g *GameController) sendMessageToSingleClient(client *Client, message Message) {

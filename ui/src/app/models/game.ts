@@ -1,5 +1,6 @@
 export class Game {
     id: string;
+    status: string;
 }
 
 export class RegistrationResponse {

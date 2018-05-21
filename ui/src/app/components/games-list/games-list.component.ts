@@ -13,7 +13,7 @@ import { Router } from '@angular/router';
 export class GamesListComponent implements OnInit {
 
   dataSource: GamesListDataSource;
-  displayedColumns = ['name', 'join'];
+  displayedColumns = ['name', 'status', 'join'];
 
   constructor(private restService: RestService,
               private playerConnection: PlayerConnectionService,
