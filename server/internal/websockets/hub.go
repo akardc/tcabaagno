@@ -6,6 +6,8 @@ import (
 	"net/http"
 
 	"github.com/Pallinder/go-randomdata"
+	"github.com/akardc/tcabaagno/server/internal/model"
+	"github.com/mitchellh/mapstructure"
 	"github.com/pkg/errors"
 	"github.com/satori/go.uuid"
 )
@@ -15,6 +17,7 @@ const (
 	RegistrationResponseMessage string = "joined-game"
 	GameUpdatedMessage          string = "game-updated"
 	SubmitQuestionsMessage      string = "submit-questions"
+	QuestionsOutputMessage      string = "questions-output"
 
 	AcceptingPlayersGameStep   string = "accepting-players"
 	AcceptingQuestionsGameStep string = "accepting-questions"
@@ -23,11 +26,12 @@ const (
 )
 
 type SubmitQuestionsMessagePayload struct {
-	Who   string `json:"who"`
-	What  string `json:"what"`
-	When  string `json:"when"`
-	Where string `json:"where"`
-	Why   string `json:"why"`
+	Who      string `json:"who"`
+	What     string `json:"what"`
+	When     string `json:"when"`
+	Where    string `json:"where"`
+	Why      string `json:"why"`
+	PlayerID string `json:"playerId"`
 }
 
 type RegistrationResponseMessagePayload struct {
@@ -46,18 +50,30 @@ type Message struct {
 	Payload interface{} `json:"payload"`
 }
 
+type MessageInput struct {
+	Type    string      `json:"type"`
+	Payload interface{} `json:"payload"`
+}
+
+type BroadcastInput struct {
+	ClientID string
+	Message  []byte
+}
+
 // GameController maintains the set of active clients and broadcasts messages to the
 // clients.
 type GameController struct {
 	ID              string
 	CurrentGameStep string
 
+	QAForms map[string]model.QAForm
+
 	// Registered clients.
 	// clients map[*Client]bool
 	clients map[string]*Client
 
 	// Inbound messages from the clients.
-	broadcast chan []byte
+	broadcast chan BroadcastInput
 
 	// Register requests from the clients.
 	register chan *Client
@@ -71,7 +87,8 @@ func NewGameController() *GameController {
 	return &GameController{
 		ID:              name,
 		CurrentGameStep: AcceptingPlayersGameStep,
-		broadcast:       make(chan []byte),
+		QAForms:         make(map[string]model.QAForm),
+		broadcast:       make(chan BroadcastInput),
 		register:        make(chan *Client),
 		unregister:      make(chan *Client),
 		clients:         make(map[string]*Client),
@@ -89,8 +106,8 @@ func (g *GameController) Run() {
 				close(client.send)
 				g.gameUpdated()
 			}
-		case message := <-g.broadcast:
-			g.handleReceivedMessage(message)
+		case broadcastInput := <-g.broadcast:
+			g.handleReceivedMessage(broadcastInput)
 		}
 	}
 }
@@ -133,16 +150,20 @@ func (g *GameController) gameUpdated() {
 	})
 }
 
-func (g *GameController) handleReceivedMessage(messageData []byte) {
-	var message Message
-	if err := json.Unmarshal(messageData, &message); err != nil {
-		log.Printf("Error decoding message: %s", messageData)
+func (g *GameController) handleReceivedMessage(broadcastInput BroadcastInput) {
+	var message MessageInput
+	if err := json.Unmarshal(broadcastInput.Message, &message); err != nil {
+		log.Println(broadcastInput.Message)
+		log.Printf("Error decoding message: %s\n\tCause: %s", broadcastInput.Message, err.Error())
 		return
 	}
 	log.Printf("Routing Incoming Message: %s", message.Type)
+	log.Printf("MessageInput: %+v", message)
 	switch message.Type {
 	case StartGameMessage:
 		g.startGame()
+	case SubmitQuestionsMessage:
+		g.receiveQuestionsForm(message, broadcastInput.ClientID)
 	default:
 		log.Printf("No handler for message \"%s\", discarding", message)
 	}
@@ -156,6 +177,56 @@ func (g *GameController) startGame() {
 		})
 		g.gameUpdated()
 	}
+}
+
+func (g *GameController) receiveQuestionsForm(message MessageInput, submittingClientID string) {
+	var questionsInput SubmitQuestionsMessagePayload
+	mapstructure.Decode(message.Payload, &questionsInput)
+	questions := model.Questions{
+		Who:      questionsInput.Who,
+		What:     questionsInput.What,
+		When:     questionsInput.When,
+		Where:    questionsInput.Where,
+		Why:      questionsInput.Why,
+		PlayerID: submittingClientID,
+	}
+	log.Printf("Received questions: %+v", questions)
+	newForm := model.QAForm{
+		Questions: questions,
+	}
+	if _, ok := g.QAForms[submittingClientID]; !ok {
+		g.QAForms[submittingClientID] = newForm
+	}
+	g.advanceToAnswersIfReady()
+}
+
+func (g *GameController) advanceToAnswersIfReady() {
+	if len(g.QAForms) == len(g.clients) {
+		g.CurrentGameStep = AcceptingAnswersGameStep
+	}
+	g.gameUpdated()
+}
+
+func (g *GameController) sendQuestions() {
+	forms := g.getShuffledForms(0)
+	for id, form := range forms {
+		g.sendMessageToSingleClient(g.clients[id], Message{
+			Type: QuestionsOutputMessage,
+			Payload: SubmitQuestionsMessagePayload{
+				Who:      form.Questions.Who,
+				What:     form.Questions.What,
+				When:     form.Questions.When,
+				Where:    form.Questions.Where,
+				Why:      form.Questions.Why,
+				PlayerID: form.Questions.PlayerID,
+			},
+		})
+	}
+}
+
+func (g *GameController) getShuffledForms(depth int) map[string]model.QAForm {
+	//
+	return map[string]model.QAForm{}
 }
 
 func (g *GameController) sendMessageToSingleClient(client *Client, message Message) {
