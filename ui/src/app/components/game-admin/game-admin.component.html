@@ -1,9 +1,13 @@
-<button mat-raised-button color="accent" (click)="startGame()">Start Game</button>
-<div>
-  <div>
-    <span>Game Name: </span><span>{{gameName}}</span>
+<div class="container">
+  <div class="property">
+    <h3>Game Name</h3>
+    <div>{{gameName}}</div>
   </div>
-  <div>
-    <span>Number of players: </span><span>{{numPlayers}}</span>
+  <div class="property">
+    <h3>Number Of Players</h3>
+    <div>{{numPlayers}}</div>
+  </div>
+  <div class="property">
+    <button mat-raised-button color="accent" (click)="startGame()">Start Game</button>
   </div>
 </div>

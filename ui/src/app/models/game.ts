@@ -13,6 +13,14 @@ export class GameInfo {
     numPlayers: number;
 }
 
+export class SubmitQuestionsPayload {
+    who: string;
+    what: string;
+    when: string;
+    where: string;
+    why: string;
+}
+
 export class Message<T> {
     type: string;
     payload: T;

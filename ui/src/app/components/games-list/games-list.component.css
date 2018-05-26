@@ -1,0 +1,22 @@
+.container {
+    margin: 0 32px 32px;
+}
+
+.title {
+    margin-top: 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.title button {
+    height: 40px;
+}
+
+.spacer {
+    flex: 1 1 auto;
+}
+
+table {
+    width: 100%;
+}

@@ -10,6 +10,7 @@ import { HttpClientModule } from '@angular/common/http';
 import { GamesListComponent } from './components/games-list/games-list.component';
 import { GameAdminComponent } from './components/game-admin/game-admin.component';
 import { QuestionsFormComponent } from './components/questions-form/questions-form.component';
+import { ReactiveFormsModule } from '@angular/forms';
 
 const appRoutes: Routes = [
   { path: '', redirectTo: '/games', pathMatch: 'full' },
@@ -29,6 +30,7 @@ const appRoutes: Routes = [
     RouterModule.forRoot(appRoutes),
     ServicesModule,
     HttpClientModule,
+    ReactiveFormsModule,
     BrowserModule,
     MatButtonModule,
     MatToolbarModule,

@@ -33,6 +33,10 @@ export class PlayerConnectionService {
     this.connection.subscribe((msg) => {
       console.log('incoming message', msg);
       this.handleIncomingMessage(msg);
+    }, (err) => {
+      console.log('error', err);
+    }, () => {
+      console.log('complete');
     });
   }
 

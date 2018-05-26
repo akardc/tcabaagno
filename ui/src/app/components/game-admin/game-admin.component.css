@@ -1,0 +1,17 @@
+.container {
+    margin: 32px 16px;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+}
+
+.property {
+    margin: 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.property h3 {
+    margin: 8px 0 0;
+}

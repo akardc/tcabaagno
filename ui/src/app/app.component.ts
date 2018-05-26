@@ -26,6 +26,6 @@ export class AppComponent {
   }
 
   public goToCurrentStep() {
-    this.playerConnection.openCurrentStep():
+    this.playerConnection.openCurrentStep();
   }
 }
